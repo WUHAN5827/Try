@@ -1,0 +1,135 @@
+新建工作空间
+里面创建src文件夹
+点开src文件夹，在里面选择在终端打开，输入catkin_init_workspace啥，然后会生成一个日志文件
+返回上一级目录，选择在终端打开，输入catkin_make,会生成devel和build文件夹
+在这一级目录输入source devel/setup.bash设置环境变量，输入gedit ~/.bashrc改变整个终端的配置文件，复制最后一行改为如下两行：（catkin_ws可为其他名字）
+	source /opt/ros/kinetic/setup.bash
+	source ~/catkin_ws/devel/setup.bash
+然后输入source ~/.bashrc使刚才的配置在终端中生效
+输入echo $ROS_PACKAGE_PATH可打印当前的路径，检查环境变量
+
+1.创建功能包（同一空间不能同名，不同空间可以同名）
+	输入cd src,进入工作空间的src文件夹下
+	输入catkin_create_pkg learning_communication std_msgs rospy roscpp(learning_communication为功能包名字，std_msgs为ros自己定义的标准数据结构，rospy roscpp为其他语言接口)，可在src查看
+	输入cd ..返回上一级目录，使用catkin_make开始编译
+2.ros通讯编程
+    2.1话题编程
+	2.1.1实现一个发布者
+	因为创建的功能包没有代码，所以进入工作空间的src文件夹下刚刚创建的功能包并点开，选择里面的src文件夹，直接在src文件夹下创建talker.cpp文件
+	2.1.2实现一个订阅者
+	因为创建的功能包没有代码，所以进入工作空间的src文件夹下刚刚创建的功能包并点开，选择里面的src文件夹，直接在src文件夹下创建listener.cpp文件
+	2.1.3编译前面两个代码
+	打开上一级目录，选择CMakeLists.txt，很多时候不需要自己去写编译文件，只需要把对应的部分去掉注释符号打开修改内容就可以了，比如把代码编译成可执行的文件，就用到add_executable()这个
+	也可以自己写：
+		add_executable(talker src/talker.cpp)
+		target_link_libraries(talker ${catkin_LIBRARIES})
+		add_executable(listener src/listener.cpp)
+		target_link_libraries(listener ${catkin_LIBRARIES})
+	有时候用到多个.cpp文件，可以这样改第一行     src/1.cpp 2.cpp 3.cpp
+	有时候需要链接第三方库，就用到第二行代码，有发布者和订阅者，所以有4行代码
+	返回工作空间目录，选择在终端打开，输入catkin_make进行编译，100%之前没有红色说明编译成功，完成后在devel/lib中会出现相应的功能包文件夹，点开就能看见所创建的节点
+	2.1.4运行可执行文件
+	打开一个终端，输入roscore,引入rosmaster
+	在打开一个终端，输入rosrun learning_communication talker,回车开始输出话题
+	再打开一个终端，输入rosrun learning_communication listener,回车开始订阅话题
+	2.1.5自定义话题消息（一般用这个）
+	在catkin_ws/src/learning_communication文件夹下创建一个文件夹名为msg,在这个文件夹下面创建自己需要的.msg文件，如people.msg
+	在padkage.xml最后添加功能包依赖：
+	<build_depend>message_generation</build_depend>
+	<exec_depend>message_runtime</exec_depend>
+	在CMakeLists.txt中添加编译选项：
+	• find_package( ...... message_generation)
+	• catkin_package(CATKIN_DEPENDS geometry_msgs roscpp
+	  rospy std_msgs message_runtime)
+	• add_message_files(FILES Person.msg)
+	generate_messages(DEPENDENCIES std_msgs)
+	根目录catkin_make命令编译
+	终端可用rosmsg show Person来查看自定义话题的内容
+    2.2服务编程
+	2.2.1自定义服务请求
+	在catkin_ws/src/learning_communication文件夹下创建一个文件夹名为srv,在这个文件夹下面创建自己需要的.srv文件，如addtwoints.srv
+	在padkage.xml最后添加功能包依赖：
+	<build_depend>message_generation</build_depend>
+	<exec_depend>message_runtime</exec_depend>
+	在CMakeLists.txt中添加编译选项：
+	• find_package( ...... message_generation)
+	• catkin_package(CATKIN_DEPENDS geometry_msgs roscpp
+	  rospy std_msgs message_runtime)
+	• add_service_files(FILES AddTwoInts.srv)
+	根目录catkin_make命令编译,生成可用的头文件
+	2.2.2实现一个服务器
+	功能包下面的src文件夹下面创建server.cpp（名字不能变）
+	2.2.3实现一个客户端
+	功能包下面的src文件夹下面创建client.cpp（名字不能变）
+	2.2.4编译代码
+	add_executable(server src/server.cpp)
+	target_link_libraries(server ${catkin_LIBRARIES})
+	add_dependencies(server ${PROJECT_NAME}_gencpp)
+	add_executable(client src/client.cpp)
+	target_link_libraries(client ${catkin_LIBRARIES})
+	add_dependencies(client ${PROJECT_NAME}_gencpp)
+	2.2.5运行可执行文件
+	打开一个终端，输入roscore,引入rosmaster
+	在打开一个终端，输入rosrun learning_communication server,回车开始
+	再打开一个终端，输入rosrun learning_communication client,回车开始
+    2.3动作编程
+	2.3.1自定义一个动作信息
+ 	在catkin_ws/src/learning_communication文件夹下创建一个文件夹名为action,在这个文件夹下面创建自己需要的.action文件，如DoDishes.action
+	在padkage.xml最后添加功能包依赖：
+	<build_depend>actionlib</build_depend>
+	<build_depend>actionlib_msgs</build_depend>
+	<exec_depend>actionlib</exec_depend>
+	<exec_depend>actionlib_msgs</exec_depend>
+	在CMakeLists.txt中添加编译选项：
+	find_package(catkin REQUIRED actionlib_msgs actionlib)
+	add_action_files(DIRECTORY action FILES DoDishes.action)
+	generate_messages(DEPENDENCIES actionlib_msgs)
+	根目录catkin_make命令编译,生成可用的头文件
+	2.3.2实现一个服务器
+	功能包下面的src文件夹下面创建DoDishes_server.cpp（名字不能变）
+	2.3.3实现一个客户端
+	功能包下面的src文件夹下面创建DoDishes_client.cpp（名字不能变）
+	2.3.4编译
+	add_executable(DoDishes_client src/DoDishes_client.cpp)
+	target_link_libraries( DoDishes_client ${catkin_LIBRARIES})
+	add_dependencies(DoDishes_client ${${PROJECT_NAME}_EXPORTED_TARGETS})
+	add_executable(DoDishes_server src/DoDishes_server.cpp)
+	target_link_libraries( DoDishes_server ${catkin_LIBRARIES})
+	add_dependencies(DoDishes_server ${${PROJECT_NAME}_EXPORTED_TARGETS})
+	2.3.5运行
+3.分布式通讯————多台电脑实现ros,只有一台为主机，其他为从机
+4.关键组件
+	4.1————launch文件
+	4.2————tf坐标变换
+	创建新的功能包learning_tf
+	输入cd src,进入工作空间的src文件夹下
+	输入catkin_create_pkg learning_tf std_msgs rospy roscpp(learning_tf为功能包名字，std_msgs为ros自己定义的标准数据结构，rospy roscpp为其他语言接口)，可在src查看
+	4.2.1创建广播器turtle_tf_broadcaster.cpp
+	4.2.2创建监听器turtle_tf_listener.cpp
+	4.2.3打开上一级目录，选择CMakeLists.txt，很多时候不需要自己去写编译文件，只需要把对应的部分去掉注释符号打开修改内容就可以了，比如把代码编译成可执行的文件，就用到add_executable()这个
+	也可以自己写：
+		add_executable(turtle_tf_broadcaster src/turtle_tf_broadcaster.cpp)
+		target_link_libraries(turtle_tf_broadcaster ${catkin_LIBRARIES})
+
+		add_executable(turtle_tf_listener src/turtle_tf_listener.cpp)
+		target_link_libraries(turtle_tf_listener ${catkin_LIBRARIES})
+	然后根目录编译
+	4.2.4通过launch文件启动
+	4.3Qt工具箱
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
